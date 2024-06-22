@@ -138,8 +138,10 @@ func DescribeSchemaRef(schemaRef *openapi3.Schema) (Schema, error) {
 		})
 	}
 
+	refTypeMapping := RefTypeMapping()
+
 	schema := Schema{
-		RefType:    schemaType[0],
+		RefType:    refTypeMapping[schemaType[0]],
 		EnumValues: util.ToSliceOfString(schemaRef.Enum),
 		OAPISchema: schemaRef,
 		ArrayItems: &arrayItems,

@@ -15,3 +15,12 @@ type Property struct {
 	Required bool
 	Schema   Schema
 }
+
+func RefTypeMapping() map[string]string {
+	return map[string]string{
+		"string":  "String",
+		"integer": "Integer",
+		"array":   "Array",
+		"object":  "Hash",
+	}
+}
