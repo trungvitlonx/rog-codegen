@@ -12,6 +12,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/iancoleman/strcase"
+	"github.com/trungle-csv/rog-codegen/internal/util"
 )
 
 //go:embed templates
@@ -19,8 +20,11 @@ var templates embed.FS
 
 type Definition struct {
 	MethodName      string
+	HttpMethod      string
+	Path            string
 	Parameters      []ParameterDefinition
 	BodyParameters  RequestBodyDefinition
+	ControllerName  string
 	IsResfulIndex   bool
 	IsResfulShow    bool
 	IsResfulCreate  bool
@@ -56,24 +60,30 @@ func Generate(swagger *openapi3.T, output string) error {
 			groupedOperations[op.Tag] = list
 		}
 	}
-	for tag, operations := range groupedOperations {
+	allDefinitions := make([]Definition, 0)
+	for _, tag := range util.SortedMapKeys(groupedOperations) {
 		className := tag + "Controller"
 		serviceName := tag + "Service"
+		operations := groupedOperations[tag]
 		definitions := make([]Definition, 0, len(operations))
 		for _, op := range operations {
 			parameters := op.PathParams
 			parameters = append(parameters, op.QueryParams...)
-
-			definitions = append(definitions, Definition{
+			definition := Definition{
 				MethodName:      strcase.ToSnake(op.OperationId),
+				HttpMethod:      op.Method,
+				Path:            op.Path,
 				Parameters:      parameters,
 				BodyParameters:  op.BodyParams,
+				ControllerName:  strcase.ToSnake(className),
 				IsResfulIndex:   false,
 				IsResfulShow:    false,
 				IsResfulCreate:  false,
 				IsResfulUpdate:  false,
 				IsResfulDestroy: false,
-			})
+			}
+			definitions = append(definitions, definition)
+			allDefinitions = append(allDefinitions, definition)
 		}
 
 		controllerData := ControllerData{
@@ -102,6 +112,17 @@ func Generate(swagger *openapi3.T, output string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	routesOut, err := generateTemplate("routes.tmpl", t, allDefinitions)
+	if err != nil {
+		return err
+	}
+	routesFileName := "api_routes.rb"
+	routesFile := output + "/gen/config/" + routesFileName
+	err = os.WriteFile(routesFile, []byte(routesOut), 0o644)
+	if err != nil {
+		return err
 	}
 
 	return nil
