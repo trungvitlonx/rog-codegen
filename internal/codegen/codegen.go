@@ -85,10 +85,20 @@ func Generate(swagger *openapi3.T, output string) error {
 		if err != nil {
 			return err
 		}
+		controllerFileName := strcase.ToSnake(className) + ".rb"
+		controllerFile := output + "/gen/controllers/" + controllerFileName
+		err = os.WriteFile(controllerFile, []byte(controllerOut), 0o644)
+		if err != nil {
+			return err
+		}
 
-		fileName := strcase.ToSnake(className) + ".rb"
-		outputFile := output + "/controllers/" + fileName
-		err = os.WriteFile(outputFile, []byte(controllerOut), 0o644)
+		serviceOut, err := generateTemplate("service.tmpl", t, controllerData)
+		if err != nil {
+			return err
+		}
+		serviceFileName := strcase.ToSnake(serviceName) + ".rb"
+		serviceFile := output + "/gen/services/" + serviceFileName
+		err = os.WriteFile(serviceFile, []byte(serviceOut), 0o644)
 		if err != nil {
 			return err
 		}
