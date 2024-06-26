@@ -12,6 +12,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/iancoleman/strcase"
+	"github.com/trungle-csv/rog-codegen/internal/codegen"
 	"github.com/trungle-csv/rog-codegen/internal/util"
 )
 
@@ -38,14 +39,27 @@ type ControllerData struct {
 	Definitions []Definition
 }
 
-func Generate(swagger *openapi3.T, output string) error {
+type CodegenService struct {
+	Swagger *openapi3.T
+	Config  codegen.Configuration
+}
+
+func NewCodegenService(swagger *openapi3.T, config codegen.Configuration) *CodegenService {
+	return &CodegenService{
+		Swagger: swagger,
+		Config:  config,
+	}
+}
+
+func (s CodegenService) Generate() error {
 	funcs := template.FuncMap{"join": strings.Join}
 	t := template.New("rog-codegen").Funcs(funcs)
 	err := loadAllTemplates(templates, t)
 	if err != nil {
 		return err
 	}
-	operationDefinitions, err := OperationDefinitions(swagger)
+
+	operationDefinitions, err := OperationDefinitions(s.Swagger)
 	if err != nil {
 		return err
 	}

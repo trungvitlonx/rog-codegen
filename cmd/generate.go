@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/trungle-csv/rog-codegen/internal/codegen"
 	"github.com/trungle-csv/rog-codegen/internal/util"
+	"gopkg.in/yaml.v3"
 )
 
 // generateCmd represents the generate command
@@ -19,33 +20,44 @@ var generateCmd = &cobra.Command{
 }
 
 func init() {
-	generateCmd.Flags().StringP("spec", "s", "swagger.yaml", "Path to swagger file.")
-	generateCmd.Flags().StringP("output", "o", "./", "Outut directory.")
-
+	generateCmd.Flags().StringP("swaggerFile", "s", "swagger.yaml", "OpenAPI 3.0 spec file.")
+	generateCmd.Flags().StringP("configFile", "c", "rog-codegen.yaml", "A YAML config file that controls rog-codegen behavior.")
 	rootCmd.AddCommand(generateCmd)
 }
 
 func generateRun(cmd *cobra.Command) {
-	filePath, err := cmd.Flags().GetString("spec")
+	flagSwaggerFile, err := cmd.Flags().GetString("swaggerFile")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid swagger file: %s\n", err)
-		os.Exit(1)
+		exitWithError("Please specify a path to OpenAPI 3.0 file.\n")
 	}
 
-	output, err := cmd.Flags().GetString("output")
+	flagConfigFile, err := cmd.Flags().GetString("configFile")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid output directory: %s\n", err)
-		os.Exit(1)
+		exitWithError("Please specify a path to configuration file.\n")
 	}
 
-	swagger, err := util.LoadSwagger(filePath)
+	configFile, err := os.ReadFile(flagConfigFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to load swagger spec: %s\n", err)
-		os.Exit(1)
+		exitWithError("Failed to read config file: %s", err)
+	}
+	var config codegen.Configuration
+	err = yaml.Unmarshal(configFile, config)
+	if err != nil {
+		exitWithError("Failed to parse config file: %s", err)
 	}
 
-	if err = codegen.Generate(swagger, output); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to generate code: %s\n", err)
-		os.Exit(1)
+	swagger, err := util.LoadSwagger(flagSwaggerFile)
+	if err != nil {
+		exitWithError("Failed to load swagger spec: %s\n", err)
 	}
+
+	codegenService := codegen.NewCodegenService(swagger, config)
+	if err = codegenService.Generate(); err != nil {
+		exitWithError("Failed to generate code: %s\n", err)
+	}
+}
+
+func exitWithError(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
 }
