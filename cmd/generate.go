@@ -41,9 +41,14 @@ func generateRun(cmd *cobra.Command) {
 		exitWithError("Failed to read config file: %s", err)
 	}
 	var config codegen.Configuration
-	err = yaml.Unmarshal(configFile, config)
+	err = yaml.Unmarshal(configFile, &config)
 	if err != nil {
 		exitWithError("Failed to parse config file: %s", err)
+	}
+
+	config = config.UpdateDefaultValues()
+	if err := config.Validate(); err != nil {
+		exitWithError("Configuration error: %s\n", err)
 	}
 
 	swagger, err := util.LoadSwagger(flagSwaggerFile)

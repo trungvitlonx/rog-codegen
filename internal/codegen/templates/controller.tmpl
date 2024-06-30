@@ -9,7 +9,7 @@
     end{{else}}{{end}}{{end -}}
 {{define "param"}}param! :{{.ParamName}}, {{.Schema.RefType}}, required: {{.Required}}{{template "enum" .Schema.EnumValues}}{{template "schema" .Schema}}{{end -}}
 {{define "property"}}param! :{{.Name}}, {{.Schema.RefType}}, required: {{.Required}}{{template "enum" .Schema.EnumValues}}{{template "schema" .Schema}}{{end}}
-class {{.ClassName}} < ApplicationController
+class {{.ClassName}}{{if ne .ControllerParentClass ""}} < {{.ControllerParentClass}}{{end}}
 {{- range .Definitions}}
   def {{.MethodName -}}
   {{with .Parameters -}}

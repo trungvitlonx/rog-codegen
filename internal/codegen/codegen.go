@@ -12,7 +12,6 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/iancoleman/strcase"
-	"github.com/trungle-csv/rog-codegen/internal/codegen"
 	"github.com/trungle-csv/rog-codegen/internal/util"
 )
 
@@ -34,17 +33,25 @@ type Definition struct {
 }
 
 type ControllerData struct {
-	ClassName   string
-	ServiceName string
-	Definitions []Definition
+	ClassName             string
+	ServiceName           string
+	Definitions           []Definition
+	ControllerParentClass string
+	ServiceParentClass    string
 }
 
 type CodegenService struct {
 	Swagger *openapi3.T
-	Config  codegen.Configuration
+	Config  Configuration
 }
 
-func NewCodegenService(swagger *openapi3.T, config codegen.Configuration) *CodegenService {
+type GeneratedDir struct {
+	ControllerDir string
+	ServiceDir    string
+	RoutesDir     string
+}
+
+func NewCodegenService(swagger *openapi3.T, config Configuration) *CodegenService {
 	return &CodegenService{
 		Swagger: swagger,
 		Config:  config,
@@ -74,7 +81,13 @@ func (s CodegenService) Generate() error {
 			groupedOperations[op.Tag] = list
 		}
 	}
+
 	allDefinitions := make([]Definition, 0)
+	dirs := s.generateDirs()
+	os.MkdirAll(dirs.ControllerDir, os.ModePerm)
+	os.MkdirAll(dirs.ServiceDir, os.ModePerm)
+	os.MkdirAll(dirs.RoutesDir, os.ModePerm)
+
 	for _, tag := range util.SortedMapKeys(groupedOperations) {
 		className := tag + "Controller"
 		serviceName := tag + "Service"
@@ -101,16 +114,20 @@ func (s CodegenService) Generate() error {
 		}
 
 		controllerData := ControllerData{
-			ClassName:   strcase.ToCamel(className),
-			ServiceName: strcase.ToCamel(serviceName),
-			Definitions: definitions,
+			ClassName:             s.Config.OutputOptions.ControllerPrefix + "::" + strcase.ToCamel(className),
+			ServiceName:           s.Config.OutputOptions.ServicePrefix + "::" + strcase.ToCamel(serviceName),
+			Definitions:           definitions,
+			ControllerParentClass: s.Config.OutputOptions.ControllerParentClass,
+			ServiceParentClass:    s.Config.OutputOptions.ServiceParentClass,
 		}
+
 		controllerOut, err := generateTemplate("controller.tmpl", t, controllerData)
 		if err != nil {
 			return err
 		}
+
 		controllerFileName := strcase.ToSnake(className) + ".rb"
-		controllerFile := output + "/gen/controllers/" + controllerFileName
+		controllerFile := dirs.ControllerDir + "/" + controllerFileName
 		err = os.WriteFile(controllerFile, []byte(controllerOut), 0o644)
 		if err != nil {
 			return err
@@ -121,7 +138,7 @@ func (s CodegenService) Generate() error {
 			return err
 		}
 		serviceFileName := strcase.ToSnake(serviceName) + ".rb"
-		serviceFile := output + "/gen/services/" + serviceFileName
+		serviceFile := dirs.ServiceDir + "/" + serviceFileName
 		err = os.WriteFile(serviceFile, []byte(serviceOut), 0o644)
 		if err != nil {
 			return err
@@ -133,7 +150,7 @@ func (s CodegenService) Generate() error {
 		return err
 	}
 	routesFileName := "api_routes.rb"
-	routesFile := output + "/gen/config/" + routesFileName
+	routesFile := dirs.RoutesDir + "/" + routesFileName
 	err = os.WriteFile(routesFile, []byte(routesOut), 0o644)
 	if err != nil {
 		return err
@@ -178,4 +195,37 @@ func loadAllTemplates(src embed.FS, template *template.Template) error {
 		}
 		return nil
 	})
+}
+
+func (s CodegenService) generateDirs() GeneratedDir {
+	workDir := s.Config.WorkingDirectory
+
+	controllerDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName) + "/" + s.Config.OutputOptions.ControllerDirectory
+	controllerPrefixes := strings.Split(s.Config.OutputOptions.ControllerPrefix, "::")
+	for _, prefix := range controllerPrefixes {
+		if len(prefix) <= 2 {
+			controllerDir = controllerDir + "/" + strings.ToLower(prefix)
+		} else {
+			controllerDir = controllerDir + "/" + strcase.ToSnakeWithIgnore(prefix, "V")
+		}
+	}
+
+	serviceDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName) + "/" + s.Config.OutputOptions.ServiceDirectory
+	if s.Config.OutputOptions.ServicePrefix != "" {
+		servicePrefixes := strings.Split(s.Config.OutputOptions.ServicePrefix, "::")
+		for _, prefix := range servicePrefixes {
+			if len(prefix) <= 2 {
+				serviceDir = serviceDir + "/" + strings.ToLower(prefix)
+			} else {
+				serviceDir = serviceDir + "/" + strcase.ToSnakeWithIgnore(prefix, "V")
+			}
+		}
+	}
+
+	routesDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName) + "/" + s.Config.OutputOptions.RoutesDirectory
+	return GeneratedDir{
+		ControllerDir: controllerDir,
+		ServiceDir:    serviceDir,
+		RoutesDir:     routesDir,
+	}
 }

@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "debug",
             "program": "${workspaceFolder}",
-            "args": ["generate", "-s", "examples/openapi.yaml"]
+            "args": ["generate", "-s", "examples/openapi.yaml", "-c", "rog-codegen.yaml"]
         }
     ]
 }
