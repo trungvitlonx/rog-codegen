@@ -4,12 +4,12 @@ package: gen
 out-options:
   controller-prefix: API::V1
   service-prefix: API::V1
-  controller-parent-class: BaseController
+  controller-parent-class: API::BaseController
   regenerate-service: false
   controller-directory: controllers
   service-directory: services
   routes-directory: config
-  service-parent-class: ModelService
+  service-parent-class:
 
 user-templates:
   controller:
