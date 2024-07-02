@@ -1,15 +1,15 @@
 ---
-working-directory: /home/trungle/Projects/rog-codegen
 package: gen
+directory:
 out-options:
   controller-prefix: API::V1
   service-prefix: API::V1
   controller-parent-class: API::BaseController
+  service-parent-class:
   regenerate-service: false
   controller-directory: controllers
   service-directory: services
   routes-directory: config
-  service-parent-class:
 
 user-templates:
   controller:

@@ -6,8 +6,8 @@ import (
 )
 
 type Configuration struct {
-	WorkingDirectory string        `yaml:"working-directory"`
 	PackageName      string        `yaml:"package"`
+	WorkingDirectory string        `yaml:"directory,omitempty"`
 	OutputOptions    OutputOptions `yaml:"out-options,omitempty"`
 	UserTemplates    UserTemplates `yaml:"user-templates,omitempty"`
 }
@@ -41,16 +41,16 @@ func (c Configuration) UpdateDefaultValues() Configuration {
 		}
 	}
 
+	if reflect.ValueOf(c.WorkingDirectory).IsZero() {
+		c.WorkingDirectory = "./"
+	}
+
 	return c
 }
 
 func (c Configuration) Validate() error {
 	if c.PackageName == "" {
 		return errors.New("package name must be specified")
-	}
-
-	if c.WorkingDirectory == "" {
-		return errors.New("working directory must be specified")
 	}
 
 	return nil

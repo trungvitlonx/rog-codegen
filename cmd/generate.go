@@ -20,8 +20,8 @@ var generateCmd = &cobra.Command{
 }
 
 func init() {
-	generateCmd.Flags().StringP("swaggerFile", "s", "swagger.yaml", "OpenAPI 3.0 spec file.")
-	generateCmd.Flags().StringP("configFile", "c", "rog-codegen.yaml", "A YAML config file that controls rog-codegen behavior.")
+	generateCmd.Flags().StringP("swaggerFile", "s", "openapi.yaml", "OpenAPI 3.0 spec file.")
+	generateCmd.Flags().StringP("configFile", "c", ".rog.yaml", "A YAML config file that controls rog-codegen behavior.")
 	rootCmd.AddCommand(generateCmd)
 }
 
@@ -57,9 +57,12 @@ func generateRun(cmd *cobra.Command) {
 	}
 
 	codegenService := codegen.NewCodegenService(swagger, config)
-	if err = codegenService.Generate(); err != nil {
+	projectPath, err := codegenService.Generate()
+	if err != nil {
 		exitWithError("Failed to generate code: %s\n", err)
 	}
+
+	fmt.Printf("Your generated codes are ready at %s\n", projectPath)
 }
 
 func exitWithError(format string, args ...interface{}) {

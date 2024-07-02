@@ -15,8 +15,12 @@ import (
 	"github.com/trungle-csv/rog-codegen/internal/util"
 )
 
-//go:embed templates
-var templates embed.FS
+var (
+	//go:embed templates
+	templates embed.FS
+
+	funcs = template.FuncMap{"join": strings.Join}
+)
 
 type Definition struct {
 	MethodName      string
@@ -49,6 +53,7 @@ type GeneratedDir struct {
 	ControllerDir string
 	ServiceDir    string
 	RoutesDir     string
+	PackageDir    string
 }
 
 func NewCodegenService(swagger *openapi3.T, config Configuration) *CodegenService {
@@ -58,17 +63,16 @@ func NewCodegenService(swagger *openapi3.T, config Configuration) *CodegenServic
 	}
 }
 
-func (s CodegenService) Generate() error {
-	funcs := template.FuncMap{"join": strings.Join}
+func (s CodegenService) Generate() (string, error) {
 	t := template.New("rog-codegen").Funcs(funcs)
 	err := loadAllTemplates(templates, t)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	operationDefinitions, err := OperationDefinitions(s.Swagger)
 	if err != nil {
-		return err
+		return "", err
 	}
 	groupedOperations := make(map[string][]OperationDefinition)
 	for _, op := range operationDefinitions {
@@ -123,40 +127,40 @@ func (s CodegenService) Generate() error {
 
 		controllerOut, err := generateTemplate("controller.tmpl", t, controllerData)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		controllerFileName := strcase.ToSnake(className) + ".rb"
 		controllerFile := dirs.ControllerDir + "/" + controllerFileName
 		err = os.WriteFile(controllerFile, []byte(controllerOut), 0o644)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		serviceOut, err := generateTemplate("service.tmpl", t, controllerData)
 		if err != nil {
-			return err
+			return "", err
 		}
 		serviceFileName := strcase.ToSnake(serviceName) + ".rb"
 		serviceFile := dirs.ServiceDir + "/" + serviceFileName
 		err = os.WriteFile(serviceFile, []byte(serviceOut), 0o644)
 		if err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	routesOut, err := generateTemplate("routes.tmpl", t, allDefinitions)
 	if err != nil {
-		return err
+		return "", err
 	}
 	routesFileName := "api_routes.rb"
 	routesFile := dirs.RoutesDir + "/" + routesFileName
 	err = os.WriteFile(routesFile, []byte(routesOut), 0o644)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return dirs.PackageDir, nil
 }
 
 func generateTemplate(templateName string, t *template.Template, data interface{}) (string, error) {
@@ -199,8 +203,9 @@ func loadAllTemplates(src embed.FS, template *template.Template) error {
 
 func (s CodegenService) generateDirs() GeneratedDir {
 	workDir := s.Config.WorkingDirectory
+	packageDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName)
 
-	controllerDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName) + "/" + s.Config.OutputOptions.ControllerDirectory
+	controllerDir := packageDir + "/" + s.Config.OutputOptions.ControllerDirectory
 	controllerPrefixes := strings.Split(s.Config.OutputOptions.ControllerPrefix, "::")
 	for _, prefix := range controllerPrefixes {
 		if len(prefix) <= 2 {
@@ -210,7 +215,7 @@ func (s CodegenService) generateDirs() GeneratedDir {
 		}
 	}
 
-	serviceDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName) + "/" + s.Config.OutputOptions.ServiceDirectory
+	serviceDir := packageDir + "/" + s.Config.OutputOptions.ServiceDirectory
 	if s.Config.OutputOptions.ServicePrefix != "" {
 		servicePrefixes := strings.Split(s.Config.OutputOptions.ServicePrefix, "::")
 		for _, prefix := range servicePrefixes {
@@ -222,10 +227,11 @@ func (s CodegenService) generateDirs() GeneratedDir {
 		}
 	}
 
-	routesDir := workDir + "/" + strcase.ToSnake(s.Config.PackageName) + "/" + s.Config.OutputOptions.RoutesDirectory
+	routesDir := packageDir + "/" + s.Config.OutputOptions.RoutesDirectory
 	return GeneratedDir{
 		ControllerDir: controllerDir,
 		ServiceDir:    serviceDir,
 		RoutesDir:     routesDir,
+		PackageDir:    packageDir,
 	}
 }

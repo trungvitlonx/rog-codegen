@@ -1,0 +1,95 @@
+openapi: 3.0.3
+info:
+  title: Profiles API
+  version: 1.0.0
+  description: An API for managing user profiles
+servers:
+  - url: https://example.com/api/v1
+    description: Production server
+tags:
+  - name: profile
+    description: Operations related to user profiles
+paths:
+  /profile:
+    post:
+      tags:
+        - profile
+      operationId: createProfile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Profile"
+      responses:
+        "201":
+          description: Profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the profile
+          readOnly: true
+        firstName:
+          type: string
+          description: First name of the user
+          example: "John"
+        lastName:
+          type: string
+          description: Last name of the user
+          example: "Doe"
+        phone:
+          type: string
+          description: Phone number of the user
+          example: "+1234567890"
+        email:
+          type: string
+          format: email
+          description: Email address of the user
+          example: "johndoe@example.com"
+        address:
+          $ref: "#/components/schemas/Address"
+    Address:
+      type: object
+      properties:
+        street:
+          type: string
+          description: Street address
+          example: "123 Wall Street"
+        city:
+          type: string
+          description: City
+          example: "New York City"
+        country:
+          type: string
+          description: Country code (ISO 3166, Alpha-2)
+          example: "US"
+        postalCode:
+          type: string
+          description: Postal code
+          example: "10005"
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: Numeric error code
+          example: 400
+        message:
+          type: string
+          description: Error message
+          example: "Invalid input data provided"
