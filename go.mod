@@ -1,4 +1,4 @@
-module github.com/trungle-csv/rog-codegen
+module github.com/trungvitlonx/rog-codegen
 
 go 1.20
 

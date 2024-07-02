@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/trungle-csv/rog-codegen/internal/util"
+	"github.com/trungvitlonx/rog-codegen/internal/util"
 )
 
 type ParameterDefinition struct {
