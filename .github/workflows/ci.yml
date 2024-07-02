@@ -17,6 +17,8 @@ jobs:
 
       - name: Set up Go
         uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.version }}
 
       - name: Build
         run: go build
