@@ -1,6 +1,6 @@
 package main
 
-import "github.com/trungle-csv/rog-codegen/cmd"
+import "github.com/trungvitlonx/rog-codegen/cmd"
 
 func main() {
 	cmd.Execute()

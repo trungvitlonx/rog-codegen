@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/trungle-csv/rog-codegen/internal/codegen"
-	"github.com/trungle-csv/rog-codegen/internal/util"
+	"github.com/trungvitlonx/rog-codegen/internal/codegen"
+	"github.com/trungvitlonx/rog-codegen/internal/util"
 	"gopkg.in/yaml.v3"
 )
 
