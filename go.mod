@@ -1,6 +1,6 @@
 module github.com/trungle-csv/rog-codegen
 
-go 1.21.4
+go 1.20
 
 require (
 	github.com/getkin/kin-openapi v0.125.0
